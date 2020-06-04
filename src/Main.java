@@ -2,6 +2,7 @@ import java.io.*;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.Set;
 
 public class Main
 {
@@ -29,16 +30,18 @@ class SWSS implements Serializable
         out.println("Welcome to SWSS (~^~^~)");
         out.println("========================\n");
         int act = 0;
-        while(act!=3){
+        while(act!=4){
             out.println("Select one you want: ");
-            out.println("1. Add id/pw");
-            out.println("2. Search pw");
-            out.println("3. Quit");
+            out.println("1. Add");
+            out.println("2. Search");
+            out.println("3. Delete");
+            out.println("4. Quit");
             act = sc.nextInt();
             switch (act){
                 case 1: add(); break;
                 case 2: search(); break;
-                case 3: exit(); break;
+                case 3: delete(); break;
+                case 4: exit(); break;
                 default: break;
             }
             out.println();
@@ -56,39 +59,96 @@ class SWSS implements Serializable
                 out.print("Reenter your password to confirm: ");
             }
             map.put("this", pw);
-            writer = new ObjectOutputStream(new FileOutputStream(pwTxt, true));   // hashmap을 그대로 직렬화로 저장 하니깐, 덮어쓰기 불가능하게하고 맵에 데이터 추가한다음 그걸 그대로 다시 씀
-            writer.writeObject(map);
-            reader = new ObjectInputStream(new FileInputStream(pwTxt));
         }else{
-            writer = new ObjectOutputStream(new FileOutputStream(pwTxt, true));
             out.print("password: ");
             pw = sc.next();
             reader = new ObjectInputStream(new FileInputStream(pwTxt));
-            map = (HashMap)reader.readObject();
+            map = (HashMap)reader.readObject();     // 파일 읽어서 hashMap에 저장!
             String truePW = map.get("this");
             while(!pw.equals(truePW)){
                 out.println("sorry, it's incorrect");
                 out.print("password: ");
                 pw = sc.next();
             }
+            reader.close();
         }
     }
 
     public void exit() throws IOException
     {
         out.println("Thank you to use. Good bye (~^~^~)");
+        // 종료 할때 이때까지 작업한 hashMap 저장. 그 전 파일을 백업하는 의미.
+        writer = new ObjectOutputStream(new FileOutputStream(pwTxt));  // hashMap serialization 때문에 그대로 저장하기 위해 "W" 모드로 파일 열기
+        writer.writeObject(map);    // 종료전에 hashMap 쓰기
         writer.close();
     }
 
-    public void add() throws IOException
+    public void add()
     {
-        map.put("tesaat", "03003");
-        map.put("ubuntu", "emergentproperties33");
-        writer.writeObject(map);
+        String key, pw;
+        out.print("where? ");
+        key = sc.next();
+        while(map.containsKey(key)){
+            out.println("sorry, it is already exist");
+            out.print("where? ");
+            key = sc.next();
+        }
+        out.print("input password: ");
+        pw = sc.next();
+        out.println(pw);
+        out.println("Add? (y/n)");
+        if(sc.next().equalsIgnoreCase("y")){
+            map.put(key, pw);
+            out.println("Add successfully");
+        }
     }
 
-    public void search() throws IOException, ClassNotFoundException
+    public void search()
     {
-        out.println(map.values());
+        String key, pw;
+        showKeyList();
+        out.print("Which one do you want to show?(quit) ");
+        key = sc.next();
+        if(key.equals("quit"))
+            return ;
+        while(!map.containsKey(key)){
+            out.println("sorry, there is no " + key);
+            out.print("Which one do you want to show?(quit) ");
+            key = sc.next();
+            if(key.equals("quit"))
+                return ;
+        }
+        pw = map.get(key);
+        out.println("Password of " + key + " is " + pw);
+    }
+
+    public void showKeyList()
+    {
+        out.println("<List>");
+        Set keySet = map.keySet();
+        for(Object s : keySet)
+            out.println("- " + s);
+    }
+
+    public void delete()
+    {
+        String key;
+        showKeyList();
+        out.print("Which one do you want to delete?(quit) ");
+        key = sc.next();
+        if(key.equals("quit"))
+            return ;
+        while(!map.containsKey(key)){
+            out.println("sorry, there is no " + key);
+            out.print("Which one do you want to delete?(quit) ");
+            key = sc.next();
+            if(key.equals("quit"))
+                return ;
+        }
+        out.println("Do you want to really delete it? (y/n)");
+        if(sc.next().equalsIgnoreCase("y")){
+            map.remove(key);
+            out.println("Delete successfully");
+        }
     }
 }
