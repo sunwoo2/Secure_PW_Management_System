@@ -35,7 +35,7 @@ class SPMS implements Serializable, Encryptable
     {
         login();
         out.println("========================");
-        out.println("Welcome to SPSS (~^~^~)");
+        out.println("Welcome to SPMS (~^~^~)");
         out.println("========================\n");
         int act = 0;
         while(act!=4){
@@ -85,7 +85,9 @@ class SPMS implements Serializable, Encryptable
 
     public void exit() throws IOException
     {
-        out.println("Thank you to use. Good bye (~^~^~)");
+        out.println("====================");
+        out.println("See you soon (~^~^~)");
+        out.println("====================\n");
         // 종료 할때 이때까지 작업한 hashMap 저장. 그 전 파일을 백업하는 의미.
         writer = new ObjectOutputStream(new FileOutputStream(pwTxt));  // hashMap serialization 때문에 그대로 저장하기 위해 "W" 모드로 파일 열기
         writer.writeObject(map);    // 종료전에 hashMap 쓰기
