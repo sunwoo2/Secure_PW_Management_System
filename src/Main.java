@@ -21,7 +21,7 @@ public class Main
     }
 }
 
-class SPMS implements Serializable
+class SPMS implements Serializable, Encryptable
 {
     PrintStream out = System.out;
     Scanner sc = new Scanner(System.in);
@@ -162,15 +162,19 @@ class SPMS implements Serializable
             out.println("Delete successfully");
         }
     }
+}
 
-    public byte[] sha256(String msg) throws NoSuchAlgorithmException
+interface Encryptable
+{
+    // SHA-256
+    default byte[] sha256(String msg) throws NoSuchAlgorithmException
     {
         MessageDigest md = MessageDigest.getInstance("SHA-256");
         md.update(msg.getBytes());
         return md.digest();
     }
 
-    public String bytesToHex(byte[] bytes)
+    default String bytesToHex(byte[] bytes)
     {
         StringBuilder builder = new StringBuilder();
         for(byte b : bytes)
@@ -178,7 +182,8 @@ class SPMS implements Serializable
         return builder.toString();
     }
 
-    public static String Encrypt(String text, String key) throws Exception
+    // AES
+    default String Encrypt(String text, String key) throws Exception
     {
         Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
         byte[] keyBytes= new byte[16];
@@ -195,7 +200,7 @@ class SPMS implements Serializable
         return encoder.encode(results);
     }
 
-    public static String Decrypt(String text, String key) throws Exception
+    default String Decrypt(String text, String key) throws Exception
     {
         Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
         byte[] keyBytes= new byte[16];
