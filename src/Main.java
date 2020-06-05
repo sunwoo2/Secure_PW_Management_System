@@ -1,4 +1,12 @@
+import sun.misc.BASE64Decoder;
+import sun.misc.BASE64Encoder;
+
+import javax.crypto.Cipher;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 import java.io.*;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
@@ -6,28 +14,28 @@ import java.util.Set;
 
 public class Main
 {
-    public static void main(String[] args) throws IOException, ClassNotFoundException
+    public static void main(String[] args) throws Exception
     {
-	    SWSS mine = new SWSS();
+	    SPSS mine = new SPSS();
 	    mine.start();
     }
 }
 
-class SWSS implements Serializable
+class SPSS implements Serializable
 {
     PrintStream out = System.out;
     Scanner sc = new Scanner(System.in);
     File pwTxt = new File("password.txt");
     ObjectOutputStream writer;
     ObjectInputStream reader;
-    String pw;
+    String thisPw;      // hashing 값 저장
     Map<String, String> map = new HashMap<>();
 
-    public void start() throws IOException, ClassNotFoundException
+    public void start() throws Exception
     {
         login();
         out.println("========================");
-        out.println("Welcome to SWSS (~^~^~)");
+        out.println("Welcome to SPSS (~^~^~)");
         out.println("========================\n");
         int act = 0;
         while(act!=4){
@@ -48,27 +56,28 @@ class SWSS implements Serializable
         }
     }
 
-    public void login() throws IOException, ClassNotFoundException
+    public void login() throws IOException, ClassNotFoundException, NoSuchAlgorithmException
     {
         if(!pwTxt.exists()){
             out.print("Please create password to use: ");
-            pw = sc.next();
+            thisPw = sc.next();
             out.print("Reenter your password to confirm: ");
-            while(!pw.equals(sc.next())){
+            while(!thisPw.equals(sc.next())){
                 out.println("sorry, that's wrong");
                 out.print("Reenter your password to confirm: ");
             }
-            map.put("this", pw);
+            thisPw = bytesToHex(sha256(thisPw));    // encrypt with SHA-256
+            map.put("this", thisPw);
         }else{
             out.print("password: ");
-            pw = sc.next();
+            thisPw = bytesToHex(sha256(sc.next()));
             reader = new ObjectInputStream(new FileInputStream(pwTxt));
             map = (HashMap)reader.readObject();     // 파일 읽어서 hashMap에 저장!
             String truePW = map.get("this");
-            while(!pw.equals(truePW)){
+            while(!thisPw.equals(truePW)){      // hash 값으로 비교
                 out.println("sorry, it's incorrect");
                 out.print("password: ");
-                pw = sc.next();
+                thisPw = bytesToHex(sha256(sc.next()));
             }
             reader.close();
         }
@@ -83,7 +92,7 @@ class SWSS implements Serializable
         writer.close();
     }
 
-    public void add()
+    public void add() throws Exception
     {
         String key, pw;
         out.print("where? ");
@@ -98,12 +107,12 @@ class SWSS implements Serializable
         out.println(pw);
         out.println("Add? (y/n)");
         if(sc.next().equalsIgnoreCase("y")){
-            map.put(key, pw);
+            map.put(key, Encrypt(pw, thisPw));  // AES로 암호화해서 저장. key는 비밀번호 hashing값
             out.println("Add successfully");
         }
     }
 
-    public void search()
+    public void search() throws Exception
     {
         String key, pw;
         showKeyList();
@@ -118,7 +127,7 @@ class SWSS implements Serializable
             if(key.equals("quit"))
                 return ;
         }
-        pw = map.get(key);
+        pw = Decrypt(map.get(key), thisPw);     // 복호화
         out.println("Password of " + key + " is " + pw);
     }
 
@@ -126,8 +135,10 @@ class SWSS implements Serializable
     {
         out.println("<List>");
         Set keySet = map.keySet();
-        for(Object s : keySet)
-            out.println("- " + s);
+        for(Object s : keySet) {
+            if(!s.equals("this"))           // hide this own password
+                out.println("- " + s);
+        }
     }
 
     public void delete()
@@ -150,5 +161,54 @@ class SWSS implements Serializable
             map.remove(key);
             out.println("Delete successfully");
         }
+    }
+
+    public byte[] sha256(String msg) throws NoSuchAlgorithmException
+    {
+        MessageDigest md = MessageDigest.getInstance("SHA-256");
+        md.update(msg.getBytes());
+        return md.digest();
+    }
+
+    public String bytesToHex(byte[] bytes)
+    {
+        StringBuilder builder = new StringBuilder();
+        for(byte b : bytes)
+            builder.append(String.format("%02x", b));
+        return builder.toString();
+    }
+
+    public static String Encrypt(String text, String key) throws Exception
+    {
+        Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+        byte[] keyBytes= new byte[16];
+        byte[] b= key.getBytes("UTF-8");
+        int len= b.length;
+        if (len > keyBytes.length) len = keyBytes.length;
+        System.arraycopy(b, 0, keyBytes, 0, len);
+        SecretKeySpec keySpec = new SecretKeySpec(keyBytes, "AES");
+        IvParameterSpec ivSpec = new IvParameterSpec(keyBytes);
+        cipher.init(Cipher.ENCRYPT_MODE,keySpec,ivSpec);
+
+        byte[] results = cipher.doFinal(text.getBytes("UTF-8"));
+        BASE64Encoder encoder = new BASE64Encoder();
+        return encoder.encode(results);
+    }
+
+    public static String Decrypt(String text, String key) throws Exception
+    {
+        Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+        byte[] keyBytes= new byte[16];
+        byte[] b= key.getBytes("UTF-8");
+        int len= b.length;
+        if (len > keyBytes.length) len = keyBytes.length;
+        System.arraycopy(b, 0, keyBytes, 0, len);
+        SecretKeySpec keySpec = new SecretKeySpec(keyBytes, "AES");
+        IvParameterSpec ivSpec = new IvParameterSpec(keyBytes);
+        cipher.init(Cipher.DECRYPT_MODE,keySpec,ivSpec);
+
+        BASE64Decoder decoder = new BASE64Decoder();
+        byte [] results = cipher.doFinal(decoder.decodeBuffer(text));
+        return new String(results,"UTF-8");
     }
 }
