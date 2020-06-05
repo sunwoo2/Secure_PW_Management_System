@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/Secure_PW_Storing_System.iml" filepath="$PROJECT_DIR$/Secure_PW_Storing_System.iml" />
+      <module fileurl="file://$PROJECT_DIR$/Secure_PW_Management_System.iml" filepath="$PROJECT_DIR$/Secure_PW_Management_System.iml" />
     </modules>
   </component>
 </project>

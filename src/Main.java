@@ -16,12 +16,12 @@ public class Main
 {
     public static void main(String[] args) throws Exception
     {
-	    SPSS mine = new SPSS();
+	    SPMS mine = new SPMS();
 	    mine.start();
     }
 }
 
-class SPSS implements Serializable
+class SPMS implements Serializable
 {
     PrintStream out = System.out;
     Scanner sc = new Scanner(System.in);
